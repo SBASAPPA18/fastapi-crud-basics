@@ -1,7 +1,12 @@
 from fastapi import FastAPI
+from sqlalchemy import engine
 from models import product
-from database import session
+from database import session,engine
+import database_model
+
 app = FastAPI()
+
+database_model.Base.metadata.create_all(bind=engine)
 
 @app.get("/")
 def greet():
@@ -16,7 +21,6 @@ products = [
 
 @app.get("/products")
 def get_all_products():
-    db =session()
     return products
 
 
