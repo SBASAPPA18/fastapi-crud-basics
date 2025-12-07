@@ -40,6 +40,7 @@ def init_db():
                     name=p.name,
                     description=p.description,
                     price=p.price,
+                    quantity=p.quantity,
                 )
             )
         db.commit()
@@ -71,26 +72,41 @@ def get_product_by_id(id: int, db:Session = Depends(get_db)):
 
 
 @app.post("/product")
-def add_product(p: product):
-    products.append(p)
+def add_product(p: product, db:Session = Depends(get_db)):
+    db.add(
+        database_model.Product(
+            id=p.id,
+            name=p.name,
+            description=p.description,
+            price=p.price,
+            quantity=p.quantity,
+        )
+    )
+    db.commit()
     return p
 
 
 @app.put("/product")
-def update_product(id: int, p: product):
-    for i in range(len(products)):
-        if products[i].id == id:
-            products[i] = p
-            return "Product updated successfully"
-
-    return {"error": "Product not found"}
+def update_product(id: int, p: product,db:Session = Depends(get_db)):
+    db_product = db.query(database_model.Product).filter(database_model.Product.id == id).first()
+    if db_product:
+        db_product.name =p.name
+        db_product.description = p.description
+        db_product.price = p.price
+        db_product.quantity = p.quantity
+        db.commit()
+        return "Product updated successfully"
+    
+    else:
+        return {"error": "Product not found"}
 
 
 @app.delete("/product")
-def delete_product(id: int):
-    for i in range(len(products)):
-        if products[i].id == id:
-            del products[i]
-            return "product deleted successfully"
-
-    return {"error": "Product not found"}
+def delete_product(id: int,db:Session = Depends(get_db)):
+    db_product = db.query(database_model.Product).filter(database_model.Product.id == id).first()
+    if db_product:
+        db.delete(db_product)
+        db.commit()
+        return "product deleted successfully"
+    else:
+        return {"error": "Product not found"}
