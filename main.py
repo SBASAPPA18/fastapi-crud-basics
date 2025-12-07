@@ -1,8 +1,9 @@
 from itertools import count
-from fastapi import FastAPI
+from fastapi import Depends,FastAPI
 from models import product
 from database import session, engine
 import database_model
+from sqlalchemy.orm import Session
 
 app = FastAPI()
 
@@ -17,7 +18,13 @@ products = [
     product(id=4, name="Monitor", description="4K UHD Monitor", price=399.99, quantity=15),
 ]
 
-
+def get_db():
+    db = session()
+    try:
+        yield db
+    finally:
+        db.close()
+    
 def init_db():
     db = session()
     try:
@@ -49,15 +56,17 @@ def greet():
 
 
 @app.get("/products")
-def get_all_products():
-    return products
+def get_all_products(db:Session = Depends(get_db)):
+    db_products = db.query(database_model.Product).all()
+
+    return db_products
 
 
 @app.get("/product/{id}")
-def get_product_by_id(id: int):
-    for p in products:
-        if p.id == id:
-            return p
+def get_product_by_id(id: int, db:Session = Depends(get_db)):
+    db_product = db.query(database_model.Product).filter(database_model.Product.id == id).first()
+    if db_product:
+        return db_product
     return {"error": "Product not found"}
 
 
